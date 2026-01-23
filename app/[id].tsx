@@ -196,9 +196,9 @@ export default function TimelinePage() {
   const renderPost = ({ item }: { item: Post }) => (
     <View style={[styles.postContainer, isDark && styles.postContainerDark]}>
       {item.repostedBy && (
-        <View style={styles.repostHeader}>
+        <View style={[styles.repostHeader, isDark && styles.repostHeaderDark]}>
           <Text style={[styles.repostText, isDark && styles.repostTextDark]}>
-            <Text style={{ color: '#27ae60' }}>♻️ </Text>
+            <Text style={{ color: '#27ae60', fontWeight: 'bold' }}>♻️ </Text>
             {item.repostedBy.displayName || item.repostedBy.handle} {t('timeline.reposted')}
           </Text>
         </View>
@@ -388,6 +388,9 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     borderBottomWidth: 0.5,
     borderBottomColor: '#eee',
+  },
+  repostHeaderDark: {
+    borderBottomColor: '#333',
   },
   repostText: {
     fontSize: 12,

@@ -138,7 +138,7 @@ export const getMergedTimeline = async (handle: string, cursorMap?: Map<string, 
         record: f.post.record as { text: string; createdAt: string; facets?: any[] },
         embed: f.post.embed as any,
         indexedAt: f.post.indexedAt,
-        repostedBy: f.reason?.$type === 'app.bsky.feed.defs#skeletonReasonRepost' ? {
+        repostedBy: (f.reason?.$type?.toLowerCase().includes('repost')) ? {
           did: (f.reason as any).by.did,
           handle: (f.reason as any).by.handle,
           displayName: (f.reason as any).by.displayName,
@@ -173,7 +173,7 @@ export const getUserTimeline = async (actor: string) => {
     record: f.post.record as { text: string; createdAt: string; facets?: any[] },
     embed: f.post.embed as any,
     indexedAt: f.post.indexedAt,
-    repostedBy: f.reason?.$type === 'app.bsky.feed.defs#skeletonReasonRepost' ? {
+    repostedBy: (f.reason?.$type?.toLowerCase().includes('repost')) ? {
       did: (f.reason as any).by.did,
       handle: (f.reason as any).by.handle,
       displayName: (f.reason as any).by.displayName,

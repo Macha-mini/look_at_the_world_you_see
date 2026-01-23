@@ -166,6 +166,7 @@ export default function TimelinePage() {
       {item.repostedBy && (
         <View style={styles.repostHeader}>
           <Text style={styles.repostText}>
+            <Text style={{ color: '#27ae60' }}>♻️ </Text>
             {item.repostedBy.displayName || item.repostedBy.handle} {t('timeline.reposted')}
           </Text>
         </View>

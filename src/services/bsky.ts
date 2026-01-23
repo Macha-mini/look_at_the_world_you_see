@@ -87,8 +87,8 @@ export const getAuthorFeed = async (actor: string, limit = 10) => {
 
 export const getMergedTimeline = async (handle: string, cursorMap?: Map<string, string>) => {
   const did = await resolveHandle(handle);
-  // Get follows (limit to 30 for performance and rate limiting)
-  const res = await agent.app.bsky.graph.getFollows({ actor: did, limit: 30 });
+  // Get follows (limit to 50 for better coverage)
+  const res = await agent.app.bsky.graph.getFollows({ actor: did, limit: 50 });
   const follows = res.data.follows.filter(profile =>
 	profile.labels == null || !profile.labels.some(label => label.val === "!no-unauthenticated")
   );
@@ -117,7 +117,15 @@ export const getMergedTimeline = async (handle: string, cursorMap?: Map<string, 
     
     const batchFeeds = await Promise.all(feedPromises);
     const batchPosts: Post[] = batchFeeds.flat()
-      .filter(f => f.post.author.did !== did) // Exclude the target user's own posts
+      .filter(f => {
+        // Exclude the target user's own posts
+        if (f.post.author.did === did) return false;
+        
+        // Exclude replies (only show original posts and reposts)
+        if (f.reply) return false;
+        
+        return true;
+      })
       .map(f => ({
         uri: f.post.uri,
         cid: f.post.cid,

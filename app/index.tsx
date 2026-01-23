@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 import { searchActors, ActorSuggestion } from '../src/services/bsky';
+import { useColorScheme } from 'react-native';
 
 export default function Home() {
   const [handle, setHandle] = useState('');
@@ -26,6 +27,8 @@ export default function Home() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   useEffect(() => {
     return () => {
@@ -84,7 +87,7 @@ export default function Home() {
 
   const renderSuggestion = ({ item }: { item: ActorSuggestion }) => (
     <TouchableOpacity 
-      style={styles.suggestionItem}
+      style={[styles.suggestionItem, isDark && styles.suggestionItemDark]}
       onPress={() => selectSuggestion(item)}
     >
       {item.avatar ? (
@@ -93,14 +96,14 @@ export default function Home() {
         <View style={[styles.suggestionAvatar, { backgroundColor: '#ccc' }]} />
       )}
       <View style={styles.suggestionInfo}>
-        <Text style={styles.suggestionDisplayName} numberOfLines={1}>
+        <Text style={[styles.suggestionDisplayName, isDark && styles.suggestionDisplayNameDark]} numberOfLines={1}>
           {item.displayName || item.handle}
         </Text>
-        <Text style={styles.suggestionHandle} numberOfLines={1}>
+        <Text style={[styles.suggestionHandle, isDark && styles.suggestionHandleDark]} numberOfLines={1}>
           @{item.handle}
         </Text>
         {item.description && (
-          <Text style={styles.suggestionDescription} numberOfLines={1}>
+          <Text style={[styles.suggestionDescription, isDark && styles.suggestionDescriptionDark]} numberOfLines={1}>
             {item.description}
           </Text>
         )}
@@ -109,14 +112,14 @@ export default function Home() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, isDark && styles.containerDark]}>
       <StatusBar style="auto" />
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
         <TouchableOpacity 
-          style={styles.languageToggle}
+          style={[styles.languageToggle, isDark && styles.languageToggleDark]}
           onPress={toggleLanguage}
         >
           <Text style={styles.languageToggleText}>
@@ -125,13 +128,14 @@ export default function Home() {
         </TouchableOpacity>
 
         <Text style={styles.title}>{t('home.title')}</Text>
-        <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
+        <Text style={[styles.subtitle, isDark && styles.subtitleDark]}>{t('home.subtitle')}</Text>
         
         <View style={styles.searchContainer}>
           <View style={styles.inputContainer}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, isDark && styles.inputDark]}
               placeholder={t('home.placeholder')}
+              placeholderTextColor={isDark ? '#555' : '#999'}
               value={handle}
               onChangeText={handleTextChange}
               autoCapitalize="none"
@@ -148,7 +152,7 @@ export default function Home() {
           </View>
 
           {showSuggestions && (
-            <View style={styles.suggestionsContainer}>
+            <View style={[styles.suggestionsContainer, isDark && styles.suggestionsContainerDark]}>
               {loadingSuggestions ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="small" color="#0085ff" />
@@ -162,7 +166,7 @@ export default function Home() {
                   keyboardShouldPersistTaps="handled"
                 />
               ) : (
-                <Text style={styles.noSuggestionsText}>{t('home.noSuggestions')}</Text>
+                <Text style={[styles.noSuggestionsText, isDark && styles.noSuggestionsTextDark]}>{t('home.noSuggestions')}</Text>
               )}
             </View>
           )}
@@ -177,6 +181,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  containerDark: {
+    backgroundColor: '#000',
+  },
   content: {
     flex: 1,
     justifyContent: 'center',
@@ -190,6 +197,9 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: '#f0f0f0',
     borderRadius: 8,
+  },
+  languageToggleDark: {
+    backgroundColor: '#333',
   },
   languageToggleText: {
     fontSize: 14,
@@ -210,6 +220,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  subtitleDark: {
+    color: '#bbb',
+  },
   searchContainer: {
     width: '100%',
     position: 'relative',
@@ -229,6 +242,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+  },
+  inputDark: {
+    backgroundColor: '#161616',
+    borderColor: '#333',
+    color: '#fff',
   },
   button: {
     backgroundColor: '#0085ff',
@@ -263,6 +281,10 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 1000,
   },
+  suggestionsContainerDark: {
+    backgroundColor: '#161616',
+    borderColor: '#333',
+  },
   suggestionsList: {
     maxHeight: 300,
   },
@@ -272,6 +294,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
     alignItems: 'center',
+  },
+  suggestionItemDark: {
+    borderBottomColor: '#333',
   },
   suggestionAvatar: {
     width: 40,
@@ -288,14 +313,23 @@ const styles = StyleSheet.create({
     color: '#000',
     marginBottom: 2,
   },
+  suggestionDisplayNameDark: {
+    color: '#fff',
+  },
   suggestionHandle: {
     fontSize: 14,
     color: '#666',
     marginBottom: 2,
   },
+  suggestionHandleDark: {
+    color: '#aaa',
+  },
   suggestionDescription: {
     fontSize: 12,
     color: '#999',
+  },
+  suggestionDescriptionDark: {
+    color: '#777',
   },
   loadingContainer: {
     padding: 20,
@@ -306,6 +340,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#999',
     fontSize: 14,
+  },
+  noSuggestionsTextDark: {
+    color: '#777',
   },
 });
 

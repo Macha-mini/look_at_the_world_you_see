@@ -9,7 +9,8 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-video"
     ],
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -30,9 +31,6 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
-    },
-    "plugins": [
-      "expo-router"
-    ]
+    }
   }
 }

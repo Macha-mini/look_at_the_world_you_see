@@ -10,19 +10,23 @@ import {
   Image, 
   ActivityIndicator,
   ScrollView,
-  Dimensions
+  Dimensions,
+  Modal,
+  Pressable
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getMergedTimeline, Post } from '../src/services/bsky';
 import { useTranslation } from 'react-i18next';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useColorScheme } from 'react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-const RichText = ({ text, facets }: { text: string; facets?: any[] }) => {
+const RichText = ({ text, facets, isDark }: { text: string; facets?: any[]; isDark: boolean }) => {
   if (!facets || facets.length === 0) {
-    return <Text style={styles.postText}>{text}</Text>;
+    return <Text style={[styles.postText, isDark && styles.postTextDark]}>{text}</Text>;
   }
 
   const elements: React.ReactNode[] = [];
@@ -58,13 +62,31 @@ const RichText = ({ text, facets }: { text: string; facets?: any[] }) => {
     elements.push(utf8Text.slice(lastIndex).toString('utf8'));
   }
 
-  return <Text style={styles.postText}>{elements}</Text>;
+  return <Text style={[styles.postText, isDark && styles.postTextDark]}>{elements}</Text>;
+};
+
+const PostVideo = ({ playlist, thumbnail }: { playlist: string; thumbnail?: string }) => {
+  const player = useVideoPlayer(playlist, (player) => {
+    player.loop = true;
+  });
+
+  return (
+    <VideoView
+      style={styles.embeddedVideo}
+      player={player}
+      allowsFullscreen
+      allowsPictureInPicture
+    />
+  );
 };
 
 export default function TimelinePage() {
-  const { id } = useLocalSearchParams() as { id: string };
+  const { id } = useLocalSearchParams();
+  const actorId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +94,7 @@ export default function TimelinePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [cursorMap, setCursorMap] = useState<Map<string, string> | undefined>(undefined);
-  const [viewingUser, setViewingUser] = useState<{ handle: string; did: string } | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -128,14 +150,24 @@ export default function TimelinePage() {
       return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
           {images.map((img: any, i: number) => (
-            <Image 
-              key={i} 
-              source={{ uri: img.thumb || img.image }} 
-              style={styles.embeddedImage} 
-              resizeMode="cover"
-            />
+            <TouchableOpacity key={i} onPress={() => setSelectedImage(img.fullsize || img.image)}>
+              <Image 
+                source={{ uri: img.thumb || img.image }} 
+                style={styles.embeddedImage} 
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
           ))}
         </ScrollView>
+      );
+    }
+
+    if (embed.$type === 'app.bsky.embed.video#view') {
+      return (
+        <PostVideo 
+          playlist={embed.playlist} 
+          thumbnail={embed.thumbnail} 
+        />
       );
     }
 
@@ -162,10 +194,10 @@ export default function TimelinePage() {
   };
 
   const renderPost = ({ item }: { item: Post }) => (
-    <View style={styles.postContainer}>
+    <View style={[styles.postContainer, isDark && styles.postContainerDark]}>
       {item.repostedBy && (
         <View style={styles.repostHeader}>
-          <Text style={styles.repostText}>
+          <Text style={[styles.repostText, isDark && styles.repostTextDark]}>
             <Text style={{ color: '#27ae60' }}>♻️ </Text>
             {item.repostedBy.displayName || item.repostedBy.handle} {t('timeline.reposted')}
           </Text>
@@ -180,33 +212,33 @@ export default function TimelinePage() {
           )}
         </TouchableOpacity>
         <View style={styles.authorInfo}>
-          <Text style={styles.displayName}>{item.author.displayName || item.author.handle}</Text>
-          <Text style={styles.handle}>@{item.author.handle}</Text>
+          <Text style={[styles.displayName, isDark && styles.displayNameDark]}>{item.author.displayName || item.author.handle}</Text>
+          <Text style={[styles.handle, isDark && styles.handleDark]}>@{item.author.handle}</Text>
         </View>
       </View>
-      <RichText text={item.record.text} facets={item.record.facets} />
+      <RichText text={item.record.text} facets={item.record.facets} isDark={isDark} />
       {renderEmbed(item.embed)}
-      <Text style={styles.timestamp}>{new Date(item.indexedAt).toLocaleString()}</Text>
+      <Text style={[styles.timestamp, isDark && styles.timestampDark]}>{new Date(item.indexedAt).toLocaleString()}</Text>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, isDark && styles.containerDark]} edges={['top', 'left', 'right']}>
+      <View style={[styles.header, isDark && styles.headerDark]}>
         <TouchableOpacity 
           onPress={() => router.canGoBack() ? router.back() : router.replace('/')} 
           style={styles.backButton}
         >
-          <Text style={styles.backButtonText}>← {t('timeline.back')}</Text>
+          <Text style={[styles.backButtonText, isDark && styles.backButtonTextDark]}>← {t('timeline.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, isDark && styles.titleDark]} numberOfLines={1}>
           {t('timeline.title', { handle: id })}
         </Text>
         <TouchableOpacity 
-          style={styles.languageToggle}
+          style={[styles.languageToggle, isDark && styles.languageToggleDark]}
           onPress={() => i18n.changeLanguage(i18n.language === 'ja' ? 'en' : 'ja')}
         >
-          <Text style={styles.languageToggleText}>
+          <Text style={[styles.languageToggleText, isDark && styles.languageToggleTextDark]}>
             {i18n.language === 'ja' ? 'EN' : '日本語'}
           </Text>
         </TouchableOpacity>
@@ -217,7 +249,7 @@ export default function TimelinePage() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0085ff" />
-          <Text style={styles.loadingText}>{t('timeline.loading')}</Text>
+          <Text style={[styles.loadingText, isDark && styles.loadingTextDark]}>{t('timeline.loading')}</Text>
         </View>
       ) : (
         <FlatList
@@ -242,12 +274,31 @@ export default function TimelinePage() {
           }
           ListEmptyComponent={
             !loading && posts.length === 0 ? (
-              <Text style={styles.emptyText}>{t('timeline.empty')}</Text>
+              <Text style={[styles.emptyText, isDark && styles.emptyTextDark]}>{t('timeline.empty')}</Text>
             ) : null
           }
         />
       )}
       <StatusBar style="auto" />
+
+      <Modal
+        visible={!!selectedImage}
+        transparent={true}
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <Pressable 
+          style={styles.modalContainer} 
+          onPress={() => setSelectedImage(null)}
+        >
+          {selectedImage && (
+            <Image 
+              source={{ uri: selectedImage }} 
+              style={styles.fullImage} 
+              resizeMode="contain"
+            />
+          )}
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -256,6 +307,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f2f5',
+  },
+  containerDark: {
+    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -266,6 +320,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
+  headerDark: {
+    backgroundColor: '#161616',
+    borderBottomColor: '#333',
+  },
   backButton: {
     padding: 5,
     width: 40,
@@ -275,6 +333,9 @@ const styles = StyleSheet.create({
     color: '#0085ff',
     fontWeight: 'bold',
   },
+  backButtonTextDark: {
+    color: '#0085ff',
+  },
   languageToggle: {
     padding: 8,
     backgroundColor: '#f0f0f0',
@@ -282,9 +343,15 @@ const styles = StyleSheet.create({
     width: 60,
     alignItems: 'center',
   },
+  languageToggleDark: {
+    backgroundColor: '#333',
+  },
   languageToggleText: {
     fontSize: 12,
     fontWeight: '600',
+    color: '#0085ff',
+  },
+  languageToggleTextDark: {
     color: '#0085ff',
   },
   title: {    flex: 1,
@@ -292,6 +359,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#0085ff',
+  },
+  titleDark: {
+    color: '#fff',
   },
   listContent: {
     padding: 10,
@@ -307,6 +377,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  postContainerDark: {
+    backgroundColor: '#161616',
+    shadowOpacity: 0.3,
+  },
   repostHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -319,6 +393,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontWeight: '600',
+  },
+  repostTextDark: {
+    color: '#999',
   },
   postHeader: {
     flexDirection: 'row',
@@ -337,14 +414,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  displayNameDark: {
+    color: '#fff',
+  },
   handle: {
     color: '#666',
     fontSize: 14,
+  },
+  handleDark: {
+    color: '#999',
   },
   postText: {
     fontSize: 16,
     lineHeight: 22,
     marginBottom: 10,
+  },
+  postTextDark: {
+    color: '#fff',
   },
   link: {
     color: '#0085ff',
@@ -357,6 +443,12 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 8,
     marginRight: 10,
+  },
+  embeddedVideo: {
+    width: '100%',
+    height: 250,
+    borderRadius: 8,
+    marginBottom: 10,
   },
   linkCard: {
     borderWidth: 1,
@@ -386,6 +478,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'right',
   },
+  timestampDark: {
+    color: '#666',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -394,6 +489,9 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     color: '#666',
+  },
+  loadingTextDark: {
+    color: '#999',
   },
   errorText: {
     color: 'red',
@@ -406,8 +504,21 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 16,
   },
+  emptyTextDark: {
+    color: '#666',
+  },
   footerLoading: {
     paddingVertical: 20,
     alignItems: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImage: {
+    width: width,
+    height: height,
   },
 });
